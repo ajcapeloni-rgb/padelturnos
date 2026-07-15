@@ -9,12 +9,12 @@ function getSheet(name) {
   return SpreadsheetApp.openById(SHEET_ID).getSheetByName(name);
 }
 
-// ── CORS headers ──────────────────────────────
+// ── CORS ────────────────────────────────────────
+// Nota: ContentService.TextOutput no soporta setHeader() en Apps Script,
+// así que no hay headers CORS manuales que setear acá. Los deployments
+// "Anyone" de Apps Script ya permiten fetch() desde cualquier origen.
 function cors(output) {
-  return output
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  return output;
 }
 
 function doGet(e) {
