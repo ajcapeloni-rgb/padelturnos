@@ -38,7 +38,9 @@ function doPost(e) {
   catch(err) { body = {}; }
   const action = body.action;
   let result;
+  const lock = LockService.getScriptLock();
   try {
+    lock.waitLock(30000);
     if      (action === 'saveReserva')   result = saveReserva(body.data);
     else if (action === 'deleteReserva') result = deleteReserva(body.key);
     else if (action === 'saveFijo')      result = saveFijo(body.data);
@@ -50,6 +52,8 @@ function doPost(e) {
     else result = { error: 'Acción no reconocida' };
   } catch(err) {
     result = { error: err.message };
+  } finally {
+    lock.releaseLock();
   }
   return cors(ContentService
     .createTextOutput(JSON.stringify(result))
