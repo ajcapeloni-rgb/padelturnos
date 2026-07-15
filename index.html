@@ -35,8 +35,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);paddin
 .ley{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.75rem;padding:8px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;align-items:center}
 .li2{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2)}
 .ld{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.bimp{padding:8px 16px;background:rgba(217,119,6,.14);color:#fbbf24;border:1.5px solid rgba(217,119,6,.4);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:.75rem;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
-.bimp:hover{background:rgba(217,119,6,.22)}
 .tw{overflow-x:auto;border-radius:14px;border:1px solid var(--bd);box-shadow:0 8px 32px rgba(0,0,0,.35)}
 table{width:100%;border-collapse:collapse;min-width:440px;table-layout:fixed}
 thead th{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--t2);padding:10px 4px;text-align:center;background:var(--bg2);border-bottom:2px solid var(--bd2)}
@@ -178,7 +176,6 @@ td{border:1px solid var(--bd)}
     <div class="li2"><div class="ld" style="background:rgba(139,92,246,.18);border:1.5px solid #8b5cf6"></div>Liga Mixta</div>
     <div class="li2"><div class="ld" style="background:var(--bg3);border:2px dashed var(--bd2)"></div>Fijo</div>
   </div>
-  <button class="bimp" onclick="imp()">📥 Cargar fijos de CLUBO</button>
   <div class="tw"><table id="grid"><tr><td class="loading" colspan="5">Cargando datos</td></tr></table></div>
   <div class="fbar"><div class="fi" id="finfo">Seleccioná los slots que querés reservar</div><button class="bp" id="btnr" disabled onclick="openM()">Reservar selección</button></div>
 </div>
@@ -257,37 +254,9 @@ const DL=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const DC=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const ME=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-// Fijos de CLUBO para importar
-const CLUBO=[
-  {d:1,n:'Ximena Figueroa',  c:1,f:'18:30',t:'20:00'},{d:1,n:'Martin Borioni',    c:2,f:'18:30',t:'20:00'},
-  {d:1,n:'Martin Borioni',   c:4,f:'18:30',t:'20:00'},{d:1,n:'Luis Ponce',        c:3,f:'18:00',t:'20:00'},
-  {d:1,n:'Luis Dallaglio',   c:1,f:'20:00',t:'21:30'},{d:1,n:'Fernando Carande',  c:2,f:'20:00',t:'21:30'},
-  {d:1,n:'Fernando Carande', c:3,f:'20:00',t:'21:30'},{d:1,n:'Lucas Rodriguez',   c:4,f:'20:00',t:'21:30'},
-  {d:1,n:'Arturo Juarez',    c:1,f:'21:30',t:'23:00'},{d:1,n:'Guillermo Bolger',  c:2,f:'21:30',t:'23:00'},
-  {d:1,n:'Matias Lopez',     c:3,f:'21:30',t:'23:00'},{d:1,n:'Victoria Ortiz',    c:4,f:'21:30',t:'23:00'},
-  {d:2,n:'Gabriela Forchino',c:1,f:'17:00',t:'18:30'},{d:2,n:'Gaston Lopez',      c:1,f:'18:30',t:'20:00'},
-  {d:2,n:'Gaston Lopez',     c:4,f:'18:30',t:'20:00'},{d:2,n:'Dario Fanuz',       c:2,f:'18:30',t:'20:00'},
-  {d:2,n:'Dario Fanuz',      c:3,f:'18:30',t:'20:00'},{d:2,n:'Angeles Espert',    c:1,f:'20:00',t:'21:30'},
-  {d:2,n:'Manuel Garcia',    c:2,f:'20:00',t:'21:30'},{d:2,n:'Mauricio Fernandez',c:3,f:'20:00',t:'21:30'},
-  {d:2,n:'Gustavo Cravero',  c:4,f:'20:00',t:'21:30'},
-  {d:3,n:'Franco Lopez',       c:1,f:'18:30',t:'20:00'},{d:3,n:'Yanina Aimonetto',  c:2,f:'18:30',t:'20:00'},
-  {d:3,n:'Hugo Duarte',        c:4,f:'18:30',t:'20:00'},{d:3,n:'Gonzalo Rusculleda',c:1,f:'20:00',t:'21:30'},
-  {d:3,n:'Damian Asis',        c:1,f:'21:30',t:'23:00'},{d:3,n:'Victoria Ortiz',    c:3,f:'21:30',t:'23:00'},
-  {d:3,n:'Fernanda Contartese',c:4,f:'21:30',t:'23:00'},
-  {d:4,n:'Carlos Piantanida',c:1,f:'18:00',t:'20:00'},{d:4,n:'Carlos Piantanida',c:3,f:'18:00',t:'20:00'},
-  {d:4,n:'Gabriela Majul',   c:2,f:'18:30',t:'20:00'},{d:4,n:'Laura Aurelli',     c:4,f:'19:30',t:'21:00'},
-  {d:4,n:'Gonzalo Vidal',    c:1,f:'20:00',t:'22:00'},{d:4,n:'Gonzalo Vidal',     c:2,f:'20:00',t:'22:00'},
-  {d:4,n:'Diego Zaragoza',   c:3,f:'20:00',t:'22:00'},{d:4,n:'Laura Bertolatto',  c:4,f:'21:00',t:'22:30'},
-  {d:5,n:'Martin Bravo',     c:1,f:'19:00',t:'21:00'},{d:5,n:'Joaquin Martinez',  c:2,f:'19:00',t:'21:00'},
-  {d:5,n:'Luis Ponce',       c:3,f:'18:30',t:'20:30'},{d:5,n:'Coty Casajus',      c:4,f:'19:00',t:'20:30'},
-  {d:5,n:'Ricardo Pereyra',  c:1,f:'21:00',t:'23:00'},{d:5,n:'Diego Charaf',      c:3,f:'20:30',t:'22:00'},
-  {d:5,n:'Diego Rimondino',  c:4,f:'20:30',t:'22:00'},
-];
-
 function gs(){const s=[];for(let h=8;h<24;h++){s.push(p(h)+':00');s.push(p(h)+':30');}for(let h=0;h<2;h++){s.push(p(h)+':00');s.push(p(h)+':30');}return s;}
 function p(n){return String(n).padStart(2,'0');}
 const SL=gs(), MI=SL.indexOf('00:00');
-function mks(f,t){const s=[];let[h,m]=f.split(':').map(Number);const[eh,em]=t.split(':').map(Number);while(h*60+m<eh*60+em){s.push(p(h)+':'+p(m));m+=30;if(m>=60){m-=60;h++;}}return s;}
 
 let off=0,sel={},tipo='casual',fm=false,sm=false,sji=null,ct=null,at='t';
 let DB={res:[],fijos:[],jug:[]};
@@ -335,50 +304,6 @@ async function loadAll() {
 function getRes(sid) { return DB.res.find(r => r.key === sid); }
 function getFijo(fk) { return DB.fijos.find(f => f.key === fk); }
 function getJug(id)  { return DB.jug.find(j => j.id === id); }
-
-// ═══════════════════════════════════════
-//  IMPORTAR FIJOS DE CLUBO
-// ═══════════════════════════════════════
-async function imp() {
-  setSyncStatus('spin', 'Importando fijos...');
-  const fijos = [];
-  const jugMap = {};
-  // Construir jugadores y fijos
-  CLUBO.forEach((f, i) => {
-    let jid;
-    const ex = DB.jug.find(j => j.nombre && j.nombre.toLowerCase() === f.n.toLowerCase());
-    if (!ex) {
-      jid = 'j' + Date.now() + i;
-      if (!jugMap[f.n]) {
-        jugMap[f.n] = jid;
-        DB.jug.push({id:jid, nombre:f.n, tel:'', email:'', turnos:0, ts:Date.now()});
-      } else {
-        jid = jugMap[f.n];
-      }
-    } else {
-      jid = ex.id;
-    }
-    mks(f.f, f.t).forEach(slot => {
-      const key = `${f.d}_${slot}_${f.c}`;
-      if (!fijos.find(x => x.key === key)) {
-        fijos.push({key, dow:f.d, slot, cancha:f.c, nombre:f.n, tipo:'casual', jugadorId:jid, ts:Date.now()});
-      }
-    });
-  });
-  try {
-    await apiPost({action:'importFijos', fijos});
-    // guardar jugadores nuevos
-    for (const j of DB.jug) {
-      if (jugMap[j.nombre]) await apiPost({action:'saveJugador', data:j});
-    }
-    await loadAll();
-    tst('✅ ' + DB.fijos.length + ' slots fijos importados a Google Sheets');
-    rGrid();
-  } catch(e) {
-    setSyncStatus('err', 'Error al importar');
-    tst('❌ Error al importar');
-  }
-}
 
 // ═══════════════════════════════════════
 //  UI HELPERS
