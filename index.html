@@ -81,6 +81,8 @@ td{border:1px solid var(--bd)}
 .fl input{width:100%;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none;transition:all .18s}
 .fl input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(180,224,0,.1)}
 .fl input::placeholder{color:var(--t3)}
+#inn,#jn{text-transform:uppercase}
+#inn::placeholder,#jn::placeholder{text-transform:none}
 .acl{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--bg2);border:1.5px solid var(--bd2);border-radius:10px;z-index:300;max-height:160px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .aci{padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd)}
 .aci:hover{background:var(--bg3)}
@@ -256,6 +258,7 @@ const ME=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic
 
 function gs(){const s=[];for(let h=8;h<24;h++){s.push(p(h)+':00');s.push(p(h)+':30');}for(let h=0;h<2;h++){s.push(p(h)+':00');s.push(p(h)+':30');}return s;}
 function p(n){return String(n).padStart(2,'0');}
+function addMin(hhmm,mins){let[h,m]=hhmm.split(':').map(Number);m+=mins;h+=Math.floor(m/60);m=((m%60)+60)%60;h=((h%24)+24)%24;return p(h)+':'+p(m);}
 const SL=gs(), MI=SL.indexOf('00:00');
 
 let off=0,sel={},tipo='casual',fm=false,sm=false,sji=null,ct=null,at='t';
@@ -370,10 +373,10 @@ function rGrid(){
         const en=r.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         const señaVal=r['seña']||r.seña;
         const sh=señaVal!=null&&señaVal!==''?`<span class="ts2">💰${Number(señaVal)>0?' $'+Number(señaVal).toLocaleString('es-AR'):' Seña'}</span>`:'';
-        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${SL[bl.si+rs-1]} · ${fd(rs*30)}</span>`:''}${sh}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
+        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}${sh}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
       }else if(bl.type==='fijo'){
         const f=bl.fijo,tp=TP[f.tipo]||TP.casual;
-        h+=`<td rowspan="${rs}" class="st ${tp.cl} fb ${rc}"><div class="ti"><span class="tn">${f.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${SL[bl.si+rs-1]} · ${fd(rs*30)}</span>`:''}
+        h+=`<td rowspan="${rs}" class="st ${tp.cl} fb ${rc}"><div class="ti"><span class="tn">${f.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}
         <span class="tf">📅 Fijo</span></div></td>`;
       }else{
         const sid=bl.sid,isSel=!!sel[sid];
@@ -407,7 +410,7 @@ function onNI(){sji=null;document.getElementById('ntag').style.display='none';cl
 function pickJ(j){sji=j.id;document.getElementById('inn').value=j.nombre;document.getElementById('acl').style.display='none';document.getElementById('ntag').style.display='none';}
 
 async function conf(){
-  const nombre=document.getElementById('inn').value.trim();if(!nombre){document.getElementById('inn').focus();return;}
+  const nombre=document.getElementById('inn').value.trim().toUpperCase();if(!nombre){document.getElementById('inn').focus();return;}
   const dw2=dw();let jid=sji;
   setSyncStatus('spin','Guardando...');
   try{
@@ -491,7 +494,7 @@ function rJug(){
 }
 function nJug(){['jn','jt','je'].forEach(id=>document.getElementById(id).value='');document.getElementById('mjug').classList.add('open');setTimeout(()=>document.getElementById('jn').focus(),100);}
 async function gJug(){
-  const n=document.getElementById('jn').value.trim();if(!n){document.getElementById('jn').focus();return;}
+  const n=document.getElementById('jn').value.trim().toUpperCase();if(!n){document.getElementById('jn').focus();return;}
   if(DB.jug.find(j=>j.nombre&&j.nombre.toLowerCase()===n.toLowerCase())){tst('Ya existe ese jugador');return;}
   const nj={id:'j'+Date.now(),nombre:n,tel:document.getElementById('jt').value.trim(),email:document.getElementById('je').value.trim(),turnos:0,ts:Date.now()};
   DB.jug.push(nj);
