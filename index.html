@@ -29,7 +29,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);paddin
 .tab:hover:not(.on){color:var(--tx);background:rgba(0,0,0,.05)}
 .sec{display:none}
 .dnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:10px 16px}
-.dnav h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700}
+.dnav h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;position:relative}
+.dnav h2::after{content:'📅';font-size:14px;opacity:.55}
+#datePick{position:absolute;opacity:0;pointer-events:none;left:0;top:100%}
 .nb{width:32px;height:32px;border:1px solid var(--bd2);background:rgba(0,0,0,.035);color:var(--tx);border-radius:8px;cursor:pointer;font-size:17px;transition:all .18s}
 .nb:hover{background:var(--ac);color:#fff;border-color:var(--ac)}
 .ley{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.75rem;padding:8px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;align-items:center}
@@ -169,7 +171,7 @@ td{border:1px solid var(--bd)}
 </div>
 
 <div id="t-disp" class="sec">
-  <div class="dnav"><button class="nb" onclick="cd(-1)">‹</button><h2 id="fl"></h2><button class="nb" onclick="cd(1)">›</button></div>
+  <div class="dnav"><button class="nb" onclick="cd(-1)">‹</button><h2 id="fl" onclick="openDatePicker()"><span id="flt"></span><input type="date" id="datePick" onchange="onDatePick()"></h2><button class="nb" onclick="cd(1)">›</button></div>
   <div class="ley">
     <div class="li2"><div class="ld" style="background:#F3F4F6;border:1.5px solid #D1D5DB"></div>Libre</div>
     <div class="li2"><div class="ld" style="background:#DBEAFE;border:1.5px solid #2563EB"></div>Casual</div>
@@ -328,12 +330,14 @@ function sw(name){
 }
 function sat(t){at=t;document.querySelectorAll('.at').forEach((b,i)=>b.classList.toggle('on',['t','f'][i]===t));rAdm();}
 function cd(d){off+=d;sel={};uf();rGrid();}
+function openDatePicker(){const inp=document.getElementById('datePick');inp.value=dk();if(inp.showPicker)inp.showPicker();else{inp.focus();inp.click();}}
+function onDatePick(){const val=document.getElementById('datePick').value;if(!val)return;const[y,m,d]=val.split('-').map(Number);const picked=new Date(y,m-1,d);const today=new Date();today.setHours(0,0,0,0);off=Math.round((picked-today)/86400000);sel={};uf();rGrid();}
 
 // ═══════════════════════════════════════
 //  GRILLA
 // ═══════════════════════════════════════
 function rGrid(){
-  document.getElementById('fl').textContent=dl(off);
+  document.getElementById('flt').textContent=dl(off);
   const date=dk(), dow2=dw();
   const NC=4;
   const cb=[];
@@ -535,7 +539,7 @@ async function elFA(fk){const i=DB.fijos.findIndex(f=>f.key===fk);if(i>=0){DB.fi
 (async()=>{
   ['disp','turnos','jug','adm'].forEach(n=>document.getElementById('t-'+n).style.display='none');
   document.getElementById('t-disp').style.display='block';
-  document.getElementById('fl').textContent=dl(off);
+  document.getElementById('flt').textContent=dl(off);
   await loadAll();
   rGrid();
   // Auto-refresh cada 60 segundos
