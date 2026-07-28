@@ -41,14 +41,15 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000);
-    if      (action === 'saveReserva')   result = saveReserva(body.data);
-    else if (action === 'deleteReserva') result = deleteReserva(body.key);
-    else if (action === 'saveFijo')      result = saveFijo(body.data);
-    else if (action === 'deleteFijo')    result = deleteFijo(body.key);
-    else if (action === 'saveJugador')   result = saveJugador(body.data);
-    else if (action === 'deleteJugador') result = deleteJugador(body.id);
-    else if (action === 'importFijos')   result = importFijos(body.fijos);
-    else if (action === 'clearFijos')    result = clearFijos();
+    if      (action === 'saveReserva')       result = saveReserva(body.data);
+    else if (action === 'deleteReserva')     result = deleteReserva(body.key);
+    else if (action === 'saveFijo')          result = saveFijo(body.data);
+    else if (action === 'deleteFijo')        result = deleteFijo(body.key);
+    else if (action === 'saveJugador')       result = saveJugador(body.data);
+    else if (action === 'deleteJugador')     result = deleteJugador(body.id);
+    else if (action === 'importFijos')       result = importFijos(body.fijos);
+    else if (action === 'clearFijos')        result = clearFijos();
+    else if (action === 'saveReservasBatch') result = saveReservasBatch(body);
     else result = { error: 'Acción no reconocida' };
   } catch(err) {
     result = { error: err.message };
@@ -93,6 +94,47 @@ function saveReserva(data) {
 function deleteReserva(key) {
   deleteRowByField('reservas', 'key', key);
   return { ok: true };
+}
+
+// ── GUARDADO EN LOTE (reserva de varios slots en una sola llamada) ──
+function saveReservasBatch(body) {
+  const result = { ok: true };
+  if (body.jugador) saveJugador(body.jugador);
+  if (body.reservas && body.reservas.length) {
+    result.reservas = batchUpsert('reservas', ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts'], 'key', body.reservas);
+  }
+  if (body.fijos && body.fijos.length) {
+    result.fijos = batchUpsert('fijos', ['key','dow','slot','cancha','nombre','tipo','jugadorId','ts'], 'key', body.fijos);
+  }
+  return result;
+}
+
+function batchUpsert(sheetName, headers, keyField, items) {
+  const sheet = getSheet(sheetName);
+  let rows = sheet.getDataRange().getValues();
+  if (rows.length === 1 && rows[0].length === 1 && rows[0][0] === '') {
+    initSheet(sheet, headers);
+    rows = [headers];
+  }
+  const hdrs = rows[0];
+  const keyIdx = hdrs.indexOf(keyField);
+  const keyToRow = {};
+  for (let i = 1; i < rows.length; i++) keyToRow[rows[i][keyIdx]] = i + 1;
+  const toAppend = [];
+  items.forEach(item => {
+    const rowIndex = keyToRow[item[keyField]];
+    const rowValues = headers.map(h => item[h] !== undefined ? item[h] : '');
+    if (rowIndex) {
+      sheet.getRange(rowIndex, 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      toAppend.push(rowValues);
+    }
+  });
+  if (toAppend.length) {
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, toAppend.length, headers.length).setValues(toAppend);
+  }
+  return { updated: items.length - toAppend.length, created: toAppend.length };
 }
 
 // ── FIJOS ─────────────────────────────────────

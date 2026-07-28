@@ -418,34 +418,37 @@ async function conf(){
   const dw2=dw();let jid=sji;
   setSyncStatus('spin','Guardando...');
   try{
+    let jugadorPayload=null;
     if(!jid){
       const ex=DB.jug.find(j=>j.nombre&&j.nombre.toLowerCase()===nombre.toLowerCase());
       if(!ex){
         jid='j'+Date.now();
-        const nj={id:jid,nombre,tel:'',email:'',turnos:0,ts:Date.now()};
+        const nj={id:jid,nombre,tel:'',email:'',turnos:Object.keys(sel).length,ts:Date.now()};
         DB.jug.push(nj);
-        await apiPost({action:'saveJugador',data:nj});
+        jugadorPayload=nj;
       }else jid=ex.id;
     }
-    const ji=DB.jug.findIndex(j=>j.id===jid);
-    if(ji>=0){DB.jug[ji].turnos=(Number(DB.jug[ji].turnos)||0)+Object.keys(sel).length;await apiPost({action:'saveJugador',data:DB.jug[ji]});}
+    if(!jugadorPayload){
+      const ji=DB.jug.findIndex(j=>j.id===jid);
+      if(ji>=0){DB.jug[ji].turnos=(Number(DB.jug[ji].turnos)||0)+Object.keys(sel).length;jugadorPayload=DB.jug[ji];}
+    }
     const seña=sm?(parseInt(document.getElementById('ins').value)||0):null;
-    const promises=[];
+    const reservas=[],fijos=[];
     Object.keys(sel).forEach(sid=>{
       const[date,slot,cancha]=sid.split('_');
       const data={key:sid,fecha:date,slot,cancha:parseInt(cancha),nombre,tipo,esFijo:fm,jugadorId:jid,seña:seña!==null?seña:'',ts:Date.now()};
       DB.res.push(data);
-      promises.push(apiPost({action:'saveReserva',data}));
+      reservas.push(data);
       if(fm){
         const fk=`${dw2}_${slot}_${cancha}`;
         if(!getFijo(fk)){
           const fd2={key:fk,dow:dw2,slot,cancha:parseInt(cancha),nombre,tipo,jugadorId:jid,ts:Date.now()};
           DB.fijos.push(fd2);
-          promises.push(apiPost({action:'saveFijo',data:fd2}));
+          fijos.push(fd2);
         }
       }
     });
-    await Promise.allSettled(promises);
+    await apiPost({action:'saveReservasBatch',jugador:jugadorPayload,reservas,fijos});
     setSyncStatus('ok','Guardado ✓');
     tst(`✅ ${(TP[tipo]||TP.casual).lb} — ${nombre}${sm?(seña>0?' 💰$'+seña:' 💰'):''}!`);
   }catch(e){
