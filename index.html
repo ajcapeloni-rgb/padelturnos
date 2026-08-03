@@ -313,7 +313,7 @@ function getJug(id)  { return DB.jug.find(j => j.id === id); }
 // ═══════════════════════════════════════
 //  UI HELPERS
 // ═══════════════════════════════════════
-function dk(o=off){const d=new Date();d.setDate(d.getDate()+o);return d.toISOString().split('T')[0];}
+function dk(o=off){const d=new Date();d.setDate(d.getDate()+o);return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 function dw(o=off){const d=new Date();d.setDate(d.getDate()+o);return d.getDay();}
 function dl(o){const d=new Date();d.setDate(d.getDate()+o);const b=`${DL[d.getDay()]} ${d.getDate()} ${ME[d.getMonth()]}`;return o===0?'Hoy — '+b:o===1?'Mañana — '+b:o===-1?'Ayer — '+b:b;}
 function ini(n){return n.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';}

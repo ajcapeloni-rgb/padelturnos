@@ -173,6 +173,18 @@ function importFijos(fijos) {
   return { ok: true, count: fijos.length };
 }
 
+// ── REPARACIÓN ÚNICA: encabezado roto de la hoja "fijos" ──
+// La fila 1 de la hoja "fijos" quedó con encabezados incorrectos
+// ("fi" en la primera columna y el resto vacíos), por lo que la app
+// nunca pudo leer bien los turnos fijos guardados. Ejecutar esta
+// función UNA VEZ desde el editor (seleccionarla y tocar "Ejecutar")
+// para corregir la fila 1. No borra ni toca los datos de las demás filas.
+function fixFijosHeader() {
+  const sheet = getSheet('fijos');
+  sheet.getRange(1, 1, 1, 8).setValues([['key','dow','slot','cancha','nombre','tipo','jugadorId','ts']]);
+  return { ok: true };
+}
+
 // ── JUGADORES ─────────────────────────────────
 function saveJugador(data) {
   const sheet = getSheet('jugadores');
