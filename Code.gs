@@ -6,7 +6,10 @@
 const SHEET_ID = '17kXOZDi4dcuJhcd7WXM8V7u5Q5L_cWaQL80Egy8nTDY';
 
 function getSheet(name) {
-  return SpreadsheetApp.openById(SHEET_ID).getSheetByName(name);
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  return sheet;
 }
 
 // ── CORS ────────────────────────────────────────
@@ -50,6 +53,7 @@ function doPost(e) {
     else if (action === 'importFijos')       result = importFijos(body.fijos);
     else if (action === 'clearFijos')        result = clearFijos();
     else if (action === 'saveReservasBatch') result = saveReservasBatch(body);
+    else if (action === 'saveExcepcion')     result = saveExcepcion(body.data);
     else result = { error: 'Acción no reconocida' };
   } catch(err) {
     result = { error: err.message };
@@ -64,9 +68,10 @@ function doPost(e) {
 // ── GET ALL ───────────────────────────────────
 function getAll() {
   return {
-    reservas:  sheetToObjects('reservas'),
-    fijos:     sheetToObjects('fijos'),
-    jugadores: sheetToObjects('jugadores'),
+    reservas:     sheetToObjects('reservas'),
+    fijos:        sheetToObjects('fijos'),
+    jugadores:    sheetToObjects('jugadores'),
+    excepciones:  sheetToObjects('excepciones'),
   };
 }
 
@@ -155,6 +160,25 @@ function saveFijo(data) {
 function deleteFijo(key) {
   deleteRowByField('fijos', 'key', key);
   return { ok: true };
+}
+
+// ── EXCEPCIONES (saltear una sola semana de un turno fijo) ──
+function saveExcepcion(data) {
+  const sheet = getSheet('excepciones');
+  const headers = ['key','fecha','slot','cancha','dow','ts'];
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length === 1 && rows[0].length === 1 && rows[0][0] === '') {
+    initSheet(sheet, headers);
+  } else {
+    const hdrs = rows[0];
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][hdrs.indexOf('key')] === data.key) {
+        return { ok: true, action: 'exists' };
+      }
+    }
+  }
+  appendRow(sheet, headers, data);
+  return { ok: true, action: 'created' };
 }
 
 function clearFijos() {

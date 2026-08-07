@@ -264,7 +264,7 @@ function addMin(hhmm,mins){let[h,m]=hhmm.split(':').map(Number);m+=mins;h+=Math.
 const SL=gs(), MI=SL.indexOf('00:00');
 
 let off=0,sel={},tipo='casual',fm=false,sm=false,sji=null,ct=null,at='t';
-let DB={res:[],fijos:[],jug:[]};
+let DB={res:[],fijos:[],jug:[],exc:[]};
 
 // ═══════════════════════════════════════
 //  API — Google Sheets
@@ -294,9 +294,10 @@ async function loadAll() {
   try {
     const data = await apiGet();
     // Convertir arrays de sheets a formato interno
-    DB.res   = (data.reservas  || []).filter(r => r.key);
-    DB.fijos = (data.fijos     || []).filter(f => f.key);
-    DB.jug   = (data.jugadores || []).filter(j => j.id);
+    DB.res   = (data.reservas    || []).filter(r => r.key);
+    DB.fijos = (data.fijos       || []).filter(f => f.key);
+    DB.jug   = (data.jugadores   || []).filter(j => j.id);
+    DB.exc   = (data.excepciones || []).filter(x => x.key);
     setSyncStatus('ok', 'Sincronizado ✓');
     return true;
   } catch(e) {
@@ -309,6 +310,7 @@ async function loadAll() {
 function getRes(sid) { return DB.res.find(r => r.key === sid); }
 function getFijo(fk) { return DB.fijos.find(f => f.key === fk); }
 function getJug(id)  { return DB.jug.find(j => j.id === id); }
+function getExc(sid) { return DB.exc.find(x => x.key === sid); }
 
 // ═══════════════════════════════════════
 //  UI HELPERS
@@ -345,14 +347,14 @@ function rGrid(){
     const bl=[];let si=0;
     while(si<SL.length){
       const slot=SL[si],sid=`${date}_${slot}_${ci+1}`,fk=`${dow2}_${slot}_${ci+1}`;
-      const res=getRes(sid), fijo=!res&&getFijo(fk);
+      const res=getRes(sid), skip=!res&&getExc(sid), fijo=!res&&!skip&&getFijo(fk);
       if(res){
         const mk=String(res.jugadorId||('n:'+res.nombre));let sp=1;
         for(let s2=si+1;s2<SL.length;s2++){const r2=getRes(`${date}_${SL[s2]}_${ci+1}`);if(r2&&String(r2.jugadorId||('n:'+r2.nombre))===mk&&r2.tipo===res.tipo&&String(r2.esFijo)===String(res.esFijo))sp++;else break;}
         bl.push({si,sp,type:'res',res,sid});si+=sp;
       }else if(fijo){
         const mk=String(fijo.jugadorId||('n:'+fijo.nombre));let sp=1;
-        for(let s2=si+1;s2<SL.length;s2++){if(getRes(`${date}_${SL[s2]}_${ci+1}`))break;const f2=getFijo(`${dow2}_${SL[s2]}_${ci+1}`);if(f2&&String(f2.jugadorId||('n:'+f2.nombre))===mk&&f2.tipo===fijo.tipo)sp++;else break;}
+        for(let s2=si+1;s2<SL.length;s2++){const sid2=`${date}_${SL[s2]}_${ci+1}`;if(getRes(sid2)||getExc(sid2))break;const f2=getFijo(`${dow2}_${SL[s2]}_${ci+1}`);if(f2&&String(f2.jugadorId||('n:'+f2.nombre))===mk&&f2.tipo===fijo.tipo)sp++;else break;}
         bl.push({si,sp,type:'fijo',fijo,sid});si+=sp;
       }else{bl.push({si,sp:1,type:'libre',sid});si++;}
     }
@@ -381,7 +383,7 @@ function rGrid(){
       }else if(bl.type==='fijo'){
         const f=bl.fijo,tp=TP[f.tipo]||TP.casual;
         const enf=f.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-        h+=`<td rowspan="${rs}" class="st ${tp.cl} fb ${rc}" onclick="oCanFijoOnly('${f.key}','${enf} · C${ci+1} · ${SL[bl.si]}')"><div class="ti"><span class="tn">${f.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}
+        h+=`<td rowspan="${rs}" class="st ${tp.cl} fb ${rc}" onclick="oCanFijoOnly('${f.key}','${bl.sid}','${enf} · C${ci+1} · ${SL[bl.si]}')"><div class="ti"><span class="tn">${f.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}
         <span class="tf">📅 Fijo</span></div></td>`;
       }else{
         const sid=bl.sid,isSel=!!sel[sid];
@@ -462,7 +464,7 @@ async function conf(){
 
 function oCan(sid,info,ef){ct={sid,ef};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display=ef?'block':'none';mcw.textContent='⚠️ Turno fijo. Podés cancelar solo esta semana o eliminar el fijo completo.';const ac=document.getElementById('mca');if(ef){ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cBlq()">Solo esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFij()">Eliminar fijo</button>`;}else{ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1" onclick="cBlq()">Cancelar</button>`;}document.getElementById('mcan').classList.add('open');}
 
-function oCanFijoOnly(fkey,info){ct={fkey};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display='block';mcw.textContent='⚠️ Turno fijo semanal (todavía sin reserva puntual esta semana). Esta acción elimina la repetición completa.';document.getElementById('mca').innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1" onclick="cFijOnly()">Eliminar fijo</button>`;document.getElementById('mcan').classList.add('open');}
+function oCanFijoOnly(fkey,sid,info){ct={fkey,sid};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display='block';mcw.textContent='⚠️ Turno fijo semanal. Podés saltear solo esta semana (sigue repitiéndose las próximas) o eliminar la repetición completa.';document.getElementById('mca').innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cSkipWeek()">Saltear esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFijOnly()">Eliminar fijo</button>`;document.getElementById('mcan').classList.add('open');}
 async function cFijOnly(){
   const fkey=ct.fkey;
   setSyncStatus('spin','Eliminando fijo...');
@@ -476,14 +478,40 @@ async function cFijOnly(){
     cM('mcan');rGrid();rTurnos();rAdm();
   }
 }
+async function cSkipWeek(){
+  const sid=ct.sid;
+  const[d,slot,c]=sid.split('_');
+  const exc={key:sid,fecha:d,slot,cancha:parseInt(c),dow:dw(),ts:Date.now()};
+  setSyncStatus('spin','Guardando...');
+  DB.exc.push(exc);
+  try{
+    await apiPost({action:'saveExcepcion',data:exc});
+    setSyncStatus('ok','Guardado');tst('Turno salteado esta semana');
+  }catch(e){
+    DB.exc=DB.exc.filter(x=>x.key!==sid);
+    setSyncStatus('err','Error al guardar');tst('⚠️ No se pudo guardar, revisá la conexión y reintentá');
+  }finally{
+    cM('mcan');rGrid();rTurnos();rAdm();
+  }
+}
 
 async function cBlq(){
   const[date,,cancha]=ct.sid.split('_'),r=getRes(ct.sid),mk=r&&String(r.jugadorId||('n:'+r.nombre));
+  const wasFijo=!!(r&&r.esFijo&&r.esFijo!=='false');
   setSyncStatus('spin','Cancelando...');
   const toDelete=DB.res.filter(x=>{const[d,,c]=x.key.split('_');return d===date&&c===cancha&&String(x.jugadorId||('n:'+x.nombre))===mk;});
   DB.res=DB.res.filter(x=>!toDelete.includes(x));
+  const excepciones=[];
+  if(wasFijo){
+    toDelete.forEach(x=>{
+      const[d,slot,c]=x.key.split('_');
+      const exc={key:x.key,fecha:d,slot,cancha:parseInt(c),dow:dw(),ts:Date.now()};
+      DB.exc.push(exc);
+      excepciones.push(exc);
+    });
+  }
   try{
-    await Promise.all(toDelete.map(x=>apiPost({action:'deleteReserva',key:x.key})));
+    await Promise.all([...toDelete.map(x=>apiPost({action:'deleteReserva',key:x.key})),...excepciones.map(x=>apiPost({action:'saveExcepcion',data:x}))]);
     setSyncStatus('ok','Cancelado');tst('Turno cancelado');
   }catch(e){
     setSyncStatus('err','Error al cancelar');tst('⚠️ No se pudo cancelar, revisá la conexión y reintentá');
