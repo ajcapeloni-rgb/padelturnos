@@ -467,8 +467,14 @@ async function cFijOnly(){
   const fkey=ct.fkey;
   setSyncStatus('spin','Eliminando fijo...');
   DB.fijos=DB.fijos.filter(f=>f.key!==fkey);
-  await apiPost({action:'deleteFijo',key:fkey});
-  cM('mcan');setSyncStatus('ok','Fijo eliminado');tst('Fijo eliminado');rGrid();rTurnos();rAdm();
+  try{
+    await apiPost({action:'deleteFijo',key:fkey});
+    setSyncStatus('ok','Fijo eliminado');tst('Fijo eliminado');
+  }catch(e){
+    setSyncStatus('err','Error al eliminar');tst('⚠️ No se pudo eliminar, revisá la conexión y reintentá');
+  }finally{
+    cM('mcan');rGrid();rTurnos();rAdm();
+  }
 }
 
 async function cBlq(){
@@ -476,8 +482,14 @@ async function cBlq(){
   setSyncStatus('spin','Cancelando...');
   const toDelete=DB.res.filter(x=>{const[d,,c]=x.key.split('_');return d===date&&c===cancha&&String(x.jugadorId||('n:'+x.nombre))===mk;});
   DB.res=DB.res.filter(x=>!toDelete.includes(x));
-  await Promise.all(toDelete.map(x=>apiPost({action:'deleteReserva',key:x.key})));
-  cM('mcan');setSyncStatus('ok','Cancelado');tst('Turno cancelado');rGrid();rTurnos();rAdm();
+  try{
+    await Promise.all(toDelete.map(x=>apiPost({action:'deleteReserva',key:x.key})));
+    setSyncStatus('ok','Cancelado');tst('Turno cancelado');
+  }catch(e){
+    setSyncStatus('err','Error al cancelar');tst('⚠️ No se pudo cancelar, revisá la conexión y reintentá');
+  }finally{
+    cM('mcan');rGrid();rTurnos();rAdm();
+  }
 }
 
 async function cFij(){
@@ -488,8 +500,14 @@ async function cFij(){
   DB.fijos=DB.fijos.filter(f=>!toDelF.includes(f));
   const toDelR=DB.res.filter(x=>{const[dd,,c]=x.key.split('_');return dd===date&&c===cancha&&String(x.jugadorId||('n:'+x.nombre))===mk;});
   DB.res=DB.res.filter(x=>!toDelR.includes(x));
-  await Promise.all([...toDelF.map(f=>apiPost({action:'deleteFijo',key:f.key})),...toDelR.map(x=>apiPost({action:'deleteReserva',key:x.key}))]);
-  cM('mcan');setSyncStatus('ok','Fijo eliminado');tst('Fijo eliminado');rGrid();rTurnos();rAdm();
+  try{
+    await Promise.all([...toDelF.map(f=>apiPost({action:'deleteFijo',key:f.key})),...toDelR.map(x=>apiPost({action:'deleteReserva',key:x.key}))]);
+    setSyncStatus('ok','Fijo eliminado');tst('Fijo eliminado');
+  }catch(e){
+    setSyncStatus('err','Error al eliminar');tst('⚠️ No se pudo eliminar, revisá la conexión y reintentá');
+  }finally{
+    cM('mcan');rGrid();rTurnos();rAdm();
+  }
 }
 
 function rTurnos(){
@@ -524,7 +542,7 @@ function vJ(id){
   document.getElementById('mvc').innerHTML=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:1.25rem"><div class="pa" style="background:${avc(j.nombre)};width:48px;height:48px;font-size:16px">${ini(j.nombre)}</div><div><strong style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">${j.nombre}</strong><div style="font-size:12px;color:var(--t2)">${j.tel||'Sin teléfono'}${j.email?' · '+j.email:''}</div><div class="ps" style="margin-top:6px"><span class="pst">🎾 ${j.turnos||0} slots</span></div></div></div>${pr.length?`<div class="sct" style="margin-bottom:8px">Últimos turnos</div><div style="display:flex;flex-direction:column;gap:5px">${pr.map(v=>{const[date,slot,cancha]=v.key.split('_');const d=new Date(date+'T12:00:00');const tp=TP[v.tipo]||TP.casual;return`<div style="font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:8px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${tp.bg};color:${tp.tc};border:1.5px solid ${tp.bc};font-weight:700">${tp.lb}</span><span style="color:var(--t2)">C${cancha} · ${slot} · ${DC[d.getDay()]} ${d.getDate()} ${ME[d.getMonth()]}</span></div>`;}).join('')}</div>`:'<div style="font-size:12px;color:var(--t3)">Sin turnos aún.</div>'}`;
   document.getElementById('bej').onclick=()=>elJ(id);document.getElementById('mvj').classList.add('open');
 }
-async function elJ(id){DB.jug=DB.jug.filter(j=>j.id!==id);await apiPost({action:'deleteJugador',id});cM('mvj');tst('Jugador eliminado');rJug();}
+async function elJ(id){DB.jug=DB.jug.filter(j=>j.id!==id);try{await apiPost({action:'deleteJugador',id});tst('Jugador eliminado');}catch(e){tst('⚠️ No se pudo eliminar, revisá la conexión y reintentá');}finally{cM('mvj');rJug();}}
 
 function rAdm(){
   const today=dk(0);
@@ -544,7 +562,7 @@ function rAdm(){
   if(!all.length){c.innerHTML='<div class="empty">No hay reservas.</div>';return;}
   c.innerHTML='<div class="lst">'+all.map(v=>{const[date,slot,cancha]=v.key.split('_');const d=new Date(date+'T12:00:00');const ds=`${DC[d.getDay()]} ${d.getDate()} ${ME[d.getMonth()]}`;const tp=TP[v.tipo]||TP.casual;const sv=v['seña']||v.seña;const sp=sv!=null&&sv!==''?`<span class="pls">💰${Number(sv)>0?' $'+Number(sv).toLocaleString('es-AR'):' Seña'}</span>`:'';return`<div class="it${v.esFijo&&v.esFijo!=='false'?' fi':''}"><div class="cb3" style="background:${tp.cb};color:${tp.cc}">C${cancha}</div><div class="ii"><strong>${v.nombre}</strong><span>${ds} · ${slot}</span></div><span class="pl" style="background:${tp.bg};color:${tp.tc};border:1.5px solid ${tp.bc}">${tp.lb}</span>${sp}${v.esFijo&&v.esFijo!=='false'?'<span class="plf">📅</span>':''}<button class="bd3" style="padding:5px 9px" onclick="oCan('${v.key}','${v.nombre.replace(/'/g,"\\'")} · C${cancha} · ${slot}',${!!(v.esFijo&&v.esFijo!=='false')})">✕</button></div>`;}).join('')+'</div>';
 }
-async function elFA(fk){const i=DB.fijos.findIndex(f=>f.key===fk);if(i>=0){DB.fijos.splice(i,1);await apiPost({action:'deleteFijo',key:fk});}tst('Fijo eliminado');rAdm();}
+async function elFA(fk){const i=DB.fijos.findIndex(f=>f.key===fk);if(i>=0){DB.fijos.splice(i,1);try{await apiPost({action:'deleteFijo',key:fk});tst('Fijo eliminado');}catch(e){tst('⚠️ No se pudo eliminar, revisá la conexión y reintentá');}}rAdm();}
 
 // ═══════════════════════════════════════
 //  INICIO
