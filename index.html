@@ -529,11 +529,14 @@ async function saveEdit(){
   }
 }
 async function cFijOnly(){
-  const fkey=ct.fkey;
+  const f=DB.fijos.find(x=>x.key===ct.fkey);
+  if(!f){cM('mcan');return;}
+  const mk=String(f.jugadorId||('n:'+f.nombre));
   setSyncStatus('spin','Eliminando fijo...');
-  DB.fijos=DB.fijos.filter(f=>f.key!==fkey);
+  const toDelF=DB.fijos.filter(x=>x.cancha==f.cancha&&x.dow==f.dow&&String(x.jugadorId||('n:'+x.nombre))===mk);
+  DB.fijos=DB.fijos.filter(x=>!toDelF.includes(x));
   try{
-    await apiPost({action:'deleteFijo',key:fkey});
+    await Promise.all(toDelF.map(x=>apiPost({action:'deleteFijo',key:x.key})));
     setSyncStatus('ok','Fijo eliminado');tst('Fijo eliminado');
   }catch(e){
     setSyncStatus('err','Error al eliminar');tst('⚠️ No se pudo eliminar, revisá la conexión y reintentá');
@@ -542,16 +545,23 @@ async function cFijOnly(){
   }
 }
 async function cSkipWeek(){
-  const sid=ct.sid;
-  const[d,slot,c]=sid.split('_');
-  const exc={key:sid,fecha:d,slot,cancha:parseInt(c),dow:dw(),ts:Date.now()};
+  const f=DB.fijos.find(x=>x.key===ct.fkey);
+  if(!f){cM('mcan');return;}
+  const mk=String(f.jugadorId||('n:'+f.nombre));
+  const date=ct.sid.split('_')[0];
+  const group=DB.fijos.filter(x=>x.cancha==f.cancha&&x.dow==f.dow&&String(x.jugadorId||('n:'+x.nombre))===mk);
   setSyncStatus('spin','Guardando...');
-  DB.exc.push(exc);
+  const excepciones=group.map(x=>{
+    const slotClean=x.key.split('_')[1];
+    const exc={key:`${date}_${slotClean}_${x.cancha}`,fecha:date,slot:slotClean,cancha:x.cancha,dow:x.dow,ts:Date.now()};
+    DB.exc.push(exc);
+    return exc;
+  });
   try{
-    await apiPost({action:'saveExcepcion',data:exc});
+    await Promise.all(excepciones.map(x=>apiPost({action:'saveExcepcion',data:x})));
     setSyncStatus('ok','Guardado');tst('Turno salteado esta semana');
   }catch(e){
-    DB.exc=DB.exc.filter(x=>x.key!==sid);
+    excepciones.forEach(x=>{DB.exc=DB.exc.filter(y=>y.key!==x.key);});
     setSyncStatus('err','Error al guardar');tst('⚠️ No se pudo guardar, revisá la conexión y reintentá');
   }finally{
     cM('mcan');rGrid();rTurnos();rAdm();
