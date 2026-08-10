@@ -512,9 +512,10 @@ async function saveEdit(){
   let newFijo=null;
   if(efm&&updated.length){
     const first=updated[0];
-    const fk=`${dow3}_${first.slot}_${first.cancha}`;
+    const slotClean=first.key.split('_')[1];
+    const fk=`${dow3}_${slotClean}_${first.cancha}`;
     if(!getFijo(fk)){
-      newFijo={key:fk,dow:dow3,slot:first.slot,cancha:first.cancha,nombre:first.nombre,tipo:etipo,jugadorId:first.jugadorId,ts:Date.now()};
+      newFijo={key:fk,dow:dow3,slot:slotClean,cancha:first.cancha,nombre:first.nombre,tipo:etipo,jugadorId:first.jugadorId,ts:Date.now()};
       DB.fijos.push(newFijo);
     }
   }
