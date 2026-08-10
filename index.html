@@ -505,7 +505,8 @@ async function saveEdit(){
   if(!ectx)return;
   const comentario=document.getElementById('ecom').value.trim();
   setSyncStatus('spin','Guardando...');
-  const dow3=dw();
+  const[ey,em,ed]=ectx.date.split('-').map(Number);
+  const dow3=new Date(ey,em-1,ed).getDay();
   const updated=ectx.items.map(x=>({...x,tipo:etipo,esFijo:efm,comentario}));
   updated.forEach(u=>{const idx=DB.res.findIndex(x=>x.key===u.key);if(idx>=0)DB.res[idx]=u;});
   let newFijo=null;
