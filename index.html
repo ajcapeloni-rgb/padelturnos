@@ -224,9 +224,25 @@ td{border:1px solid var(--bd)}
   </div>
 </div>
 <div class="mo" id="mcan">
-  <div class="md"><h3>Cancelar turno</h3><div class="ms" id="mci"></div>
+  <div class="md"><h3>Turno</h3><div class="ms" id="mci"></div>
   <div id="mcw" style="display:none;font-size:12px;color:#86198F;background:#FAE8FF;border:1.5px solid #A21CAF;padding:10px 12px;border-radius:10px;margin-bottom:10px">⚠️ Turno fijo. Podés cancelar solo esta semana o eliminar el fijo completo.</div>
+  <button class="bc" id="beditbtn" style="width:100%;margin-bottom:10px;display:none" onclick="openEditFromCancel()">✏️ Editar turno</button>
   <div class="ma" id="mca"></div></div>
+</div>
+<div class="mo" id="medit">
+  <div class="md">
+    <h3>Editar turno</h3><div class="ms" id="emsub"></div>
+    <div style="font-size:10px;font-weight:800;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tipo de turno</div>
+    <div class="tgrid">
+      <button class="to ac2" id="eoc" onclick="stiEdit('casual')"><div class="dot" style="background:#2563EB"></div><span>Casual</span></button>
+      <button class="to" id="eol" onclick="stiEdit('liga')"><div class="dot" style="background:#A21CAF"></div><span>Liga</span></button>
+      <button class="to" id="eoe" onclick="stiEdit('clase')"><div class="dot" style="background:#D97706"></div><span>Clase</span></button>
+      <button class="to" id="eom" onclick="stiEdit('ligamixta')"><div class="dot" style="background:#7C3AED"></div><span>Liga Mixta</span></button>
+    </div>
+    <div class="tr2" onclick="tFijoEdit()"><div><div class="slb">📅 Turno fijo semanal</div><div class="slb2">Se repite cada semana</div></div><div class="tgl" id="etgf"></div></div>
+    <div class="fl"><label>Comentario</label><textarea id="ecom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:70px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
+    <div class="ma"><button class="bc" onclick="cM('medit')">Cancelar</button><button class="bp" style="flex:1" onclick="saveEdit()">Guardar cambios ✓</button></div>
+  </div>
 </div>
 <div class="mo" id="mjug">
   <div class="md"><h3>Nuevo jugador</h3>
@@ -379,7 +395,8 @@ function rGrid(){
         const en=r.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         const señaVal=r['seña']||r.seña;
         const sh=señaVal!=null&&señaVal!==''?`<span class="ts2">💰${Number(señaVal)>0?' $'+Number(señaVal).toLocaleString('es-AR'):' Seña'}</span>`:'';
-        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}${sh}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
+        const ch=r.comentario?`<span class="ts2" title="${r.comentario.replace(/"/g,'&quot;')}">💬</span>`:'';
+        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}${sh}${ch}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
       }else if(bl.type==='fijo'){
         const f=bl.fijo,tp=TP[f.tipo]||TP.casual;
         const enf=f.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -462,9 +479,53 @@ async function conf(){
   }
 }
 
-function oCan(sid,info,ef){ct={sid,ef};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display=ef?'block':'none';mcw.textContent='⚠️ Turno fijo. Podés cancelar solo esta semana o eliminar el fijo completo.';const ac=document.getElementById('mca');if(ef){ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cBlq()">Solo esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFij()">Eliminar fijo</button>`;}else{ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1" onclick="cBlq()">Cancelar</button>`;}document.getElementById('mcan').classList.add('open');}
+function oCan(sid,info,ef){ct={sid,ef};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display=ef?'block':'none';mcw.textContent='⚠️ Turno fijo. Podés cancelar solo esta semana o eliminar el fijo completo.';document.getElementById('beditbtn').style.display='block';const ac=document.getElementById('mca');if(ef){ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cBlq()">Solo esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFij()">Eliminar fijo</button>`;}else{ac.innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1" onclick="cBlq()">Cancelar</button>`;}document.getElementById('mcan').classList.add('open');}
 
-function oCanFijoOnly(fkey,sid,info){ct={fkey,sid};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display='block';mcw.textContent='⚠️ Turno fijo semanal. Podés saltear solo esta semana (sigue repitiéndose las próximas) o eliminar la repetición completa.';document.getElementById('mca').innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cSkipWeek()">Saltear esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFijOnly()">Eliminar fijo</button>`;document.getElementById('mcan').classList.add('open');}
+function oCanFijoOnly(fkey,sid,info){ct={fkey,sid};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display='block';mcw.textContent='⚠️ Turno fijo semanal. Podés saltear solo esta semana (sigue repitiéndose las próximas) o eliminar la repetición completa.';document.getElementById('beditbtn').style.display='none';document.getElementById('mca').innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cSkipWeek()">Saltear esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFijOnly()">Eliminar fijo</button>`;document.getElementById('mcan').classList.add('open');}
+
+let etipo='casual',efm=false,ectx=null;
+function stiEdit(t){etipo=t;const map={casual:'ac2',liga:'al2',clase:'ae2',ligamixta:'am2'};const ids={casual:'eoc',liga:'eol',clase:'eoe',ligamixta:'eom'};Object.keys(ids).forEach(k=>document.getElementById(ids[k]).className='to');document.getElementById(ids[t]).className='to '+map[t];}
+function tFijoEdit(){efm=!efm;document.getElementById('etgf').classList.toggle('on',efm);}
+function openEditFromCancel(){if(ct&&ct.sid)oEdit(ct.sid);}
+function oEdit(sid){
+  const r=getRes(sid);if(!r)return;
+  const[date,,cancha]=sid.split('_');
+  const mk=String(r.jugadorId||('n:'+r.nombre));
+  const items=DB.res.filter(x=>{const[d,,c]=x.key.split('_');return d===date&&c===cancha&&String(x.jugadorId||('n:'+x.nombre))===mk;});
+  ectx={date,cancha,mk,items};
+  document.getElementById('emsub').textContent=`${r.nombre} · C${cancha} · ${items.length} slot${items.length>1?'s':''}`;
+  document.getElementById('ecom').value=r.comentario||'';
+  stiEdit(r.tipo||'casual');
+  efm=!!(r.esFijo&&r.esFijo!=='false');
+  document.getElementById('etgf').classList.toggle('on',efm);
+  cM('mcan');
+  document.getElementById('medit').classList.add('open');
+}
+async function saveEdit(){
+  if(!ectx)return;
+  const comentario=document.getElementById('ecom').value.trim();
+  setSyncStatus('spin','Guardando...');
+  const dow3=dw();
+  const updated=ectx.items.map(x=>({...x,tipo:etipo,esFijo:efm,comentario}));
+  updated.forEach(u=>{const idx=DB.res.findIndex(x=>x.key===u.key);if(idx>=0)DB.res[idx]=u;});
+  let newFijo=null;
+  if(efm&&updated.length){
+    const first=updated[0];
+    const fk=`${dow3}_${first.slot}_${first.cancha}`;
+    if(!getFijo(fk)){
+      newFijo={key:fk,dow:dow3,slot:first.slot,cancha:first.cancha,nombre:first.nombre,tipo:etipo,jugadorId:first.jugadorId,ts:Date.now()};
+      DB.fijos.push(newFijo);
+    }
+  }
+  try{
+    await apiPost({action:'saveReservasBatch',jugador:null,reservas:updated,fijos:newFijo?[newFijo]:[]});
+    setSyncStatus('ok','Guardado ✓');tst('Turno actualizado ✅');
+  }catch(e){
+    setSyncStatus('err','Error al guardar');tst('⚠️ No se pudo guardar, revisá la conexión y reintentá');
+  }finally{
+    cM('medit');rGrid();rTurnos();rAdm();
+  }
+}
 async function cFijOnly(){
   const fkey=ct.fkey;
   setSyncStatus('spin','Eliminando fijo...');
@@ -544,7 +605,7 @@ function rTurnos(){
   if(!items.length&&!DB.fijos.length){c.innerHTML='<div class="empty">No hay turnos aún.</div>';return;}
   let h='<div class="lst">';
   if(DB.fijos.length){h+=`<div class="sct">📅 Fijos semanales</div>`;DB.fijos.forEach(f=>{const tp=TP[f.tipo]||TP.casual;h+=`<div class="it fi"><div class="cb3" style="background:${tp.cb};color:${tp.cc}">C${f.cancha}</div><div class="ii"><strong>${f.nombre}</strong><span>Todos los ${DL[f.dow]} · ${f.slot}</span></div><span class="pl" style="background:${tp.bg};color:${tp.tc};border:1.5px solid ${tp.bc}">${tp.lb}</span><span class="plf">Fijo</span></div>`;});if(items.length)h+='<div style="height:6px"></div>';}
-  if(items.length){h+=`<div class="sct">Reservas puntuales</div>`;items.forEach(v=>{const[date,slot,cancha]=v.key.split('_');const d=new Date(date+'T12:00:00');const ds=`${DC[d.getDay()]} ${d.getDate()} ${ME[d.getMonth()]}`;const tp=TP[v.tipo]||TP.casual;const sv=v['seña']||v.seña;const sp=sv!=null&&sv!==''?`<span class="pls">💰${Number(sv)>0?' $'+Number(sv).toLocaleString('es-AR'):' Seña'}</span>`:'';h+=`<div class="it${v.esFijo&&v.esFijo!=='false'?' fi':''}"><div class="cb3" style="background:${tp.cb};color:${tp.cc}">C${cancha}</div><div class="ii"><strong>${v.nombre}</strong><span>${ds} · ${slot}</span></div><span class="pl" style="background:${tp.bg};color:${tp.tc};border:1.5px solid ${tp.bc}">${tp.lb}</span>${sp}${v.esFijo&&v.esFijo!=='false'?'<span class="plf">Fijo</span>':''}<button class="bd3" style="padding:5px 9px" onclick="oCan('${v.key}','${v.nombre.replace(/'/g,"\\'")} · C${cancha} · ${slot}',${!!(v.esFijo&&v.esFijo!=='false')})">✕</button></div>`;});}
+  if(items.length){h+=`<div class="sct">Reservas puntuales</div>`;items.forEach(v=>{const[date,slot,cancha]=v.key.split('_');const d=new Date(date+'T12:00:00');const ds=`${DC[d.getDay()]} ${d.getDate()} ${ME[d.getMonth()]}`;const tp=TP[v.tipo]||TP.casual;const sv=v['seña']||v.seña;const sp=sv!=null&&sv!==''?`<span class="pls">💰${Number(sv)>0?' $'+Number(sv).toLocaleString('es-AR'):' Seña'}</span>`:'';const cm=v.comentario?`<span style="display:block;font-style:italic;opacity:.8">💬 ${v.comentario}</span>`:'';h+=`<div class="it${v.esFijo&&v.esFijo!=='false'?' fi':''}"><div class="cb3" style="background:${tp.cb};color:${tp.cc}">C${cancha}</div><div class="ii"><strong>${v.nombre}</strong><span>${ds} · ${slot}</span>${cm}</div><span class="pl" style="background:${tp.bg};color:${tp.tc};border:1.5px solid ${tp.bc}">${tp.lb}</span>${sp}${v.esFijo&&v.esFijo!=='false'?'<span class="plf">Fijo</span>':''}<button class="bc" style="padding:5px 9px" onclick="oEdit('${v.key}')">✏️</button><button class="bd3" style="padding:5px 9px" onclick="oCan('${v.key}','${v.nombre.replace(/'/g,"\\'")} · C${cancha} · ${slot}',${!!(v.esFijo&&v.esFijo!=='false')})">✕</button></div>`;});}
   c.innerHTML=h+'</div>';
 }
 

@@ -90,9 +90,9 @@ function saveReserva(data) {
   }
   // insertar nueva fila
   if (rows.length === 1 && rows[0].length === 1 && rows[0][0] === '') {
-    initSheet(sheet, ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts']);
+    initSheet(sheet, ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts','comentario']);
   }
-  appendRow(sheet, ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts'], data);
+  appendRow(sheet, ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts','comentario'], data);
   return { ok: true, action: 'created' };
 }
 
@@ -106,7 +106,7 @@ function saveReservasBatch(body) {
   const result = { ok: true };
   if (body.jugador) saveJugador(body.jugador);
   if (body.reservas && body.reservas.length) {
-    result.reservas = batchUpsert('reservas', ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts'], 'key', body.reservas);
+    result.reservas = batchUpsert('reservas', ['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts','comentario'], 'key', body.reservas);
   }
   if (body.fijos && body.fijos.length) {
     result.fijos = batchUpsert('fijos', ['key','dow','slot','cancha','nombre','tipo','jugadorId','ts'], 'key', body.fijos);
@@ -206,6 +206,17 @@ function importFijos(fijos) {
 function fixFijosHeader() {
   const sheet = getSheet('fijos');
   sheet.getRange(1, 1, 1, 8).setValues([['key','dow','slot','cancha','nombre','tipo','jugadorId','ts']]);
+  return { ok: true };
+}
+
+// ── REPARACIÓN ÚNICA: agregar columna "comentario" a la hoja "reservas" ──
+// Se agregó soporte para comentarios en cada turno, pero la hoja "reservas"
+// ya tenía datos con 10 columnas. Ejecutar esta función UNA VEZ desde el
+// editor para agregar "comentario" como columna K del encabezado.
+// No borra ni toca los datos existentes.
+function fixReservasHeader() {
+  const sheet = getSheet('reservas');
+  sheet.getRange(1, 1, 1, 11).setValues([['key','fecha','slot','cancha','nombre','tipo','esFijo','jugadorId','seña','ts','comentario']]);
   return { ok: true };
 }
 
