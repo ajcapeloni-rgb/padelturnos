@@ -52,8 +52,9 @@ function doPost(e) {
     else if (action === 'deleteJugador')     result = deleteJugador(body.id);
     else if (action === 'importFijos')       result = importFijos(body.fijos);
     else if (action === 'clearFijos')        result = clearFijos();
-    else if (action === 'saveReservasBatch') result = saveReservasBatch(body);
-    else if (action === 'saveExcepcion')     result = saveExcepcion(body.data);
+    else if (action === 'saveReservasBatch')   result = saveReservasBatch(body);
+    else if (action === 'saveExcepcion')       result = saveExcepcion(body.data);
+    else if (action === 'deleteReservasBatch') result = deleteReservasBatch(body);
     else result = { error: 'Acción no reconocida' };
   } catch(err) {
     result = { error: err.message };
@@ -144,6 +145,60 @@ function saveReservasBatch(body) {
     result.fijos = batchUpsert('fijos', ['key','dow','slot','cancha','nombre','tipo','jugadorId','ts'], 'key', body.fijos);
   }
   return result;
+}
+
+// ── BORRADO EN LOTE (cancelar un turno de varios slots en una sola llamada) ──
+// Antes, cancelar un turno de N slots (y guardar excepciones de fijo)
+// disparaba N llamadas separadas, cada una serializada por el lock y
+// releyendo la planilla completa -- de ahí la demora al cancelar.
+function deleteReservasBatch(body) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  if (body.keys && body.keys.length) deleteRowsByKeysSS(ss, 'reservas', body.keys);
+  if (body.fijoKeys && body.fijoKeys.length) deleteRowsByKeysSS(ss, 'fijos', body.fijoKeys);
+  if (body.excepciones && body.excepciones.length) {
+    batchUpsertSS(ss, 'excepciones', ['key','fecha','slot','cancha','dow','ts'], 'key', body.excepciones);
+  }
+  return { ok: true };
+}
+
+function deleteRowsByKeysSS(ss, sheetName, keys) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return;
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length < 2) return;
+  const keyIdx = rows[0].indexOf('key');
+  const keySet = new Set(keys.map(String));
+  for (let i = rows.length - 1; i >= 1; i--) {
+    if (keySet.has(String(rows[i][keyIdx]))) sheet.deleteRow(i + 1);
+  }
+}
+
+function batchUpsertSS(ss, sheetName, headers, keyField, items) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+  let rows = sheet.getDataRange().getValues();
+  if (rows.length === 1 && rows[0].length === 1 && rows[0][0] === '') {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    rows = [headers];
+  }
+  const hdrs = rows[0];
+  const keyIdx = hdrs.indexOf(keyField);
+  const keyToRow = {};
+  for (let i = 1; i < rows.length; i++) keyToRow[rows[i][keyIdx]] = i + 1;
+  const toAppend = [];
+  items.forEach(item => {
+    const rowIndex = keyToRow[item[keyField]];
+    const rowValues = headers.map(h => item[h] !== undefined ? item[h] : '');
+    if (rowIndex) {
+      sheet.getRange(rowIndex, 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      toAppend.push(rowValues);
+    }
+  });
+  if (toAppend.length) {
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, toAppend.length, headers.length).setValues(toAppend);
+  }
 }
 
 function batchUpsert(sheetName, headers, keyField, items) {
