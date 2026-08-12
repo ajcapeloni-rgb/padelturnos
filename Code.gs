@@ -66,13 +66,45 @@ function doPost(e) {
 }
 
 // ── GET ALL ───────────────────────────────────
+// Abre la planilla UNA sola vez y la reutiliza para las 4 hojas (en vez
+// de reabrirla por cada una), y no manda reservas/excepciones de hace
+// más de 7 días -- ese historial sigue intacto en la planilla, solo no
+// se carga en la app, para que la sincronización sea más rápida.
 function getAll() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const cutoff = cutoffDateStr(7);
   return {
-    reservas:     sheetToObjects('reservas'),
-    fijos:        sheetToObjects('fijos'),
-    jugadores:    sheetToObjects('jugadores'),
-    excepciones:  sheetToObjects('excepciones'),
+    reservas:     sheetObjectsFrom(ss, 'reservas').filter(r => !r.key || dateFromKey(r.key) >= cutoff),
+    fijos:        sheetObjectsFrom(ss, 'fijos'),
+    jugadores:    sheetObjectsFrom(ss, 'jugadores'),
+    excepciones:  sheetObjectsFrom(ss, 'excepciones').filter(e => !e.key || dateFromKey(e.key) >= cutoff),
   };
+}
+
+function dateFromKey(key) {
+  return String(key).split('_')[0];
+}
+
+function cutoffDateStr(daysBack) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysBack);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function sheetObjectsFrom(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0];
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => v !== ''));
 }
 
 // ── RESERVAS ──────────────────────────────────
