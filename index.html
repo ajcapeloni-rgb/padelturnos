@@ -221,6 +221,7 @@ td{border:1px solid var(--bd)}
       <div class="smw" id="smw"><span class="scu">$</span><input type="number" id="ins" placeholder="0" min="0" step="100"></div>
     </div>
     <div class="tr2" onclick="tFijo()"><div><div class="slb">📅 Turno fijo semanal</div><div class="slb2">Se repite cada semana</div></div><div class="tgl" id="tgf"></div></div>
+    <div class="fl"><label>Comentario</label><textarea id="incom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:60px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
     <div class="ma"><button class="bc" onclick="cM('mres')">Cancelar</button><button class="bp" style="flex:1" onclick="conf()">Confirmar ✓</button></div>
   </div>
 </div>
@@ -452,6 +453,7 @@ function openM(){
   sji=null;fm=false;sm=false;
   ['tgf','tgs'].forEach(id=>document.getElementById(id).classList.remove('on'));
   document.getElementById('smw').classList.remove('vis');document.getElementById('srw').classList.remove('hs');document.getElementById('ins').value='';
+  document.getElementById('incom').value='';
   sti('casual');document.getElementById('mres').classList.add('open');setTimeout(()=>document.getElementById('inn').focus(),100);
 }
 
@@ -479,10 +481,11 @@ async function conf(){
       if(ji>=0){DB.jug[ji].turnos=(Number(DB.jug[ji].turnos)||0)+Object.keys(sel).length;jugadorPayload=DB.jug[ji];}
     }
     const seña=sm?(parseInt(document.getElementById('ins').value)||0):null;
+    const comentario=document.getElementById('incom').value.trim();
     const reservas=[],fijos=[];
     Object.keys(sel).forEach(sid=>{
       const[date,slot,cancha]=sid.split('_');
-      const data={key:sid,fecha:date,slot,cancha:parseInt(cancha),nombre,tipo,esFijo:fm,jugadorId:jid,seña:seña!==null?seña:'',ts:Date.now()};
+      const data={key:sid,fecha:date,slot,cancha:parseInt(cancha),nombre,tipo,esFijo:fm,jugadorId:jid,seña:seña!==null?seña:'',ts:Date.now(),comentario};
       DB.res.push(data);
       reservas.push(data);
       if(fm){
