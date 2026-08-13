@@ -221,7 +221,7 @@ td{border:1px solid var(--bd)}
       <div class="smw" id="smw"><span class="scu">$</span><input type="number" id="ins" placeholder="0" min="0" step="100"></div>
     </div>
     <div class="tr2" onclick="tFijo()"><div><div class="slb">📅 Turno fijo semanal</div><div class="slb2">Se repite cada semana</div></div><div class="tgl" id="tgf"></div></div>
-    <div class="fl"><label>Comentario</label><textarea id="incom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:60px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
+    <div class="fl"><label id="incomlbl">Comentario</label><textarea id="incom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:60px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
     <div class="ma"><button class="bc" onclick="cM('mres')">Cancelar</button><button class="bp" style="flex:1" onclick="conf()">Confirmar ✓</button></div>
   </div>
 </div>
@@ -242,7 +242,7 @@ td{border:1px solid var(--bd)}
       <button class="to" id="eom" onclick="stiEdit('ligamixta')"><div class="dot" style="background:#7C3AED"></div><span>Liga Mixta</span></button>
     </div>
     <div class="tr2" onclick="tFijoEdit()"><div><div class="slb">📅 Turno fijo semanal</div><div class="slb2">Se repite cada semana</div></div><div class="tgl" id="etgf"></div></div>
-    <div class="fl"><label>Comentario</label><textarea id="ecom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:70px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
+    <div class="fl"><label id="ecomlbl">Comentario</label><textarea id="ecom" placeholder="Notas sobre este turno (opcional)" style="width:100%;min-height:70px;resize:vertical;font-family:'Outfit',sans-serif;padding:9px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;background:var(--bg2);color:var(--tx);outline:none"></textarea></div>
     <div class="ma"><button class="bc" onclick="cM('medit')">Cancelar</button><button class="bp" style="flex:1" onclick="saveEdit()">Guardar cambios ✓</button></div>
   </div>
 </div>
@@ -422,8 +422,9 @@ function rGrid(){
         const en=r.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         const señaVal=r['seña']||r.seña;
         const sh=señaVal!=null&&señaVal!==''?`<span class="ts2">💰${Number(señaVal)>0?' $'+Number(señaVal).toLocaleString('es-AR'):' Seña'}</span>`:'';
-        const ch=r.comentario?`<span class="ts2" title="${r.comentario.replace(/"/g,'&quot;')}">💬</span>`:'';
-        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}${sh}${ch}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
+        const rival=(r.tipo==='liga'&&r.comentario)?`<span class="td2" style="font-weight:700;opacity:1">🆚 ${r.comentario.replace(/</g,'&lt;')}</span>`:'';
+        const ch=(r.tipo!=='liga'&&r.comentario)?`<span class="ts2" title="${r.comentario.replace(/"/g,'&quot;')}">💬</span>`:'';
+        h+=`<td rowspan="${rs}" class="st ${tp.cl}${fc} ${rc}" onclick="oCan('${bl.sid}','${en} · C${ci+1} · ${SL[bl.si]}',${!!(r.esFijo&&r.esFijo!=='false')})"><div class="ti"><span class="tn">${r.nombre}</span>${rs>1?`<span class="td2">${SL[bl.si]} – ${addMin(SL[bl.si+rs-1],30)} · ${fd(rs*30)}</span>`:''}${rival}${sh}${ch}${r.esFijo&&r.esFijo!=='false'?'<span class="tf">📅 Fijo</span>':''}</div></td>`;
       }else if(bl.type==='fijo'){
         const f=bl.fijo,tp=TP[f.tipo]||TP.casual;
         const enf=f.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -441,7 +442,7 @@ function rGrid(){
 
 function ts(sid,slot,cancha){if(sel[sid])delete sel[sid];else sel[sid]={slot,cancha};uf();rGrid();}
 function uf(){const n=Object.keys(sel).length,btn=document.getElementById('btnr'),info=document.getElementById('finfo');if(!n){info.innerHTML='Seleccioná los slots que querés reservar';btn.disabled=true;return;}info.innerHTML=`<strong>${n}</strong> slot${n>1?'s':''} · ${fd(n*30)}`;btn.disabled=false;}
-function sti(t){tipo=t;const map={casual:'ac2',liga:'al2',clase:'ae2',ligamixta:'am2'};const ids={casual:'oc',liga:'ol',clase:'oe',ligamixta:'om'};Object.keys(ids).forEach(k=>document.getElementById(ids[k]).className='to');document.getElementById(ids[t]).className='to '+map[t];}
+function sti(t){tipo=t;const map={casual:'ac2',liga:'al2',clase:'ae2',ligamixta:'am2'};const ids={casual:'oc',liga:'ol',clase:'oe',ligamixta:'om'};Object.keys(ids).forEach(k=>document.getElementById(ids[k]).className='to');document.getElementById(ids[t]).className='to '+map[t];const lbl=document.getElementById('incomlbl'),ta=document.getElementById('incom');if(t==='liga'){lbl.textContent='¿Contra quién juega?';ta.placeholder='Ej: vs. Pérez / González';}else{lbl.textContent='Comentario';ta.placeholder='Notas sobre este turno (opcional)';}}
 function tSena(){sm=!sm;document.getElementById('tgs').classList.toggle('on',sm);document.getElementById('smw').classList.toggle('vis',sm);document.getElementById('srw').classList.toggle('hs',sm);if(sm)setTimeout(()=>document.getElementById('ins').focus(),50);else document.getElementById('ins').value='';}
 function tFijo(){fm=!fm;document.getElementById('tgf').classList.toggle('on',fm);}
 
@@ -513,7 +514,7 @@ function oCan(sid,info,ef){ct={sid,ef};document.getElementById('mci').textConten
 function oCanFijoOnly(fkey,sid,info){ct={fkey,sid};document.getElementById('mci').textContent=info;const mcw=document.getElementById('mcw');mcw.style.display='block';mcw.textContent='⚠️ Turno fijo semanal. Podés saltear solo esta semana (sigue repitiéndose las próximas) o eliminar la repetición completa.';document.getElementById('beditbtn').style.display='none';document.getElementById('mca').innerHTML=`<button class="bc" onclick="cM('mcan')">Volver</button><button class="bd3" style="flex:1;font-size:11px" onclick="cSkipWeek()">Saltear esta semana</button><button class="bd3" style="flex:1;font-size:11px" onclick="cFijOnly()">Eliminar fijo</button>`;document.getElementById('mcan').classList.add('open');}
 
 let etipo='casual',efm=false,ectx=null;
-function stiEdit(t){etipo=t;const map={casual:'ac2',liga:'al2',clase:'ae2',ligamixta:'am2'};const ids={casual:'eoc',liga:'eol',clase:'eoe',ligamixta:'eom'};Object.keys(ids).forEach(k=>document.getElementById(ids[k]).className='to');document.getElementById(ids[t]).className='to '+map[t];}
+function stiEdit(t){etipo=t;const map={casual:'ac2',liga:'al2',clase:'ae2',ligamixta:'am2'};const ids={casual:'eoc',liga:'eol',clase:'eoe',ligamixta:'eom'};Object.keys(ids).forEach(k=>document.getElementById(ids[k]).className='to');document.getElementById(ids[t]).className='to '+map[t];const lbl=document.getElementById('ecomlbl'),ta=document.getElementById('ecom');if(t==='liga'){lbl.textContent='¿Contra quién juega?';ta.placeholder='Ej: vs. Pérez / González';}else{lbl.textContent='Comentario';ta.placeholder='Notas sobre este turno (opcional)';}}
 function tFijoEdit(){efm=!efm;document.getElementById('etgf').classList.toggle('on',efm);}
 function openEditFromCancel(){if(ct&&ct.sid)oEdit(ct.sid);}
 function oEdit(sid){
