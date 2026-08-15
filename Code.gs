@@ -371,3 +371,19 @@ function deleteRowByField(sheetName, field, value) {
     }
   }
 }
+
+// ── DIAGNÓSTICO: revisar el historial de versiones de la planilla ──
+// Requiere habilitar el servicio avanzado "Drive API" (Servicios → + →
+// Drive API) antes de ejecutar esta función. Como todos los cambios
+// pasan por este mismo script (que corre con tu cuenta), el historial
+// no distingue qué empleado hizo cada cambio -- solo el momento.
+// Ejecutar UNA VEZ y revisar el resultado en Ver → Registros de ejecución.
+function checkRevisions() {
+  const revisions = Drive.Revisions.list(SHEET_ID, { maxResults: 100 });
+  const list = (revisions.items || []).map(r => ({
+    modifiedDate: r.modifiedDate,
+    lastModifyingUser: r.lastModifyingUserName || (r.lastModifyingUser && r.lastModifyingUser.displayName) || 'desconocido'
+  }));
+  Logger.log(JSON.stringify(list, null, 2));
+  return list;
+}
