@@ -26,6 +26,7 @@ function doGet(e) {
   try {
     if (action === 'getAll')      result = getAll();
     else if (action === 'ping')   result = { ok: true };
+    else if (action === 'getLog') result = getLog(parseInt(e.parameter.limit) || 100);
     else result = { error: 'Acción no reconocida' };
   } catch(err) {
     result = { error: err.message };
@@ -56,14 +57,64 @@ function doPost(e) {
     else if (action === 'saveExcepcion')       result = saveExcepcion(body.data);
     else if (action === 'deleteReservasBatch') result = deleteReservasBatch(body);
     else result = { error: 'Acción no reconocida' };
+    logAction(action, body, result);
   } catch(err) {
     result = { error: err.message };
+    try { logAction(action, body, result); } catch(e2) {}
   } finally {
     lock.releaseLock();
   }
   return cors(ContentService
     .createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON));
+}
+
+// ── AUDITORÍA ───────────────────────────────────
+// Registra cada acción de escritura (crear/borrar turno, fijo,
+// jugador, excepción) con fecha/hora exacta y un resumen de qué
+// se tocó. Nunca bloquea la operación principal si falla el logueo.
+// Consultar con: .../exec?action=getLog&limit=100 (últimas primero).
+function logAction(action, body, result) {
+  try {
+    const sheet = getSheet('auditoria');
+    const headers = ['ts', 'fecha', 'accion', 'detalle', 'resultado'];
+    const rows = sheet.getDataRange().getValues();
+    if (rows.length === 1 && rows[0].length === 1 && rows[0][0] === '') {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+    const now = new Date();
+    sheet.appendRow([now.getTime(), now.toString(), action || '(sin acción)', summarizeBody(body), JSON.stringify(result).slice(0, 200)]);
+  } catch (e) {
+    // el logueo nunca debe romper la operación principal
+  }
+}
+
+function summarizeBody(body) {
+  if (!body) return '';
+  const parts = [];
+  if (body.key) parts.push('key=' + body.key);
+  if (body.keys) parts.push('keys=' + body.keys.join(','));
+  if (body.fijoKeys) parts.push('fijoKeys=' + body.fijoKeys.join(','));
+  if (body.id) parts.push('id=' + body.id);
+  if (body.data && body.data.key) parts.push('data.key=' + body.data.key + (body.data.nombre ? ' nombre=' + body.data.nombre : ''));
+  if (body.data && body.data.id && !body.id) parts.push('data.id=' + body.data.id + (body.data.nombre ? ' nombre=' + body.data.nombre : ''));
+  if (body.reservas && body.reservas.length) parts.push('reservas=' + body.reservas.map(r => r.key + (r.nombre ? '(' + r.nombre + ')' : '')).join(','));
+  if (body.fijos && body.fijos.length) parts.push('fijos=' + body.fijos.map(f => f.key + (f.nombre ? '(' + f.nombre + ')' : '')).join(','));
+  if (body.excepciones && body.excepciones.length) parts.push('excepciones=' + body.excepciones.map(x => x.key).join(','));
+  return parts.length ? parts.join(' | ') : JSON.stringify(body).slice(0, 200);
+}
+
+function getLog(limit) {
+  const sheet = getSheet('auditoria');
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+  return rows.slice(-limit).reverse();
 }
 
 // ── GET ALL ───────────────────────────────────
